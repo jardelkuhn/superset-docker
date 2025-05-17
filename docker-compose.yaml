@@ -1,8 +1,8 @@
-x-superset-image: &superset-image apachesuperset.docker.scarf.sh/apache/superset:${TAG:-latest}
+x-superset-image: &superset-image apache/superset:4.1.2
 x-superset-volumes:
   &superset-volumes
   - ./docker:/app/docker
-  - superset_home:/app/superset_home
+  - ./data/superset_home:/app/superset_home
 
 services:
   redis:
@@ -10,22 +10,22 @@ services:
     container_name: superset_cache
     restart: unless-stopped
     volumes:
-      - redis:/data
+      - ./data/redis:/data
 
   db:
     env_file:
-      - path: docker/.env
+      - path: ./docker/.env
         required: true
     image: postgres:15
     container_name: superset_db
     restart: unless-stopped
     volumes:
-      - db_home:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
       - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
 
   superset:
     env_file:
-      - path: docker/.env
+      - path: ./docker/.env
         required: true
     image: *superset-image
     container_name: superset_app
@@ -46,7 +46,7 @@ services:
     container_name: superset_init
     command: ["./docker/docker-init.sh"]
     env_file:
-      - path: docker/.env
+      - path: ./docker/.env
         required: true
     depends_on:
       db:
@@ -58,13 +58,5 @@ services:
     healthcheck:
       disable: true
     environment:
-      SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES:-yes}"
+      SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES:-no}"
       SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
-
-volumes:
-  superset_home:
-    external: false
-  db_home:
-    external: false
-  redis:
-    external: false
